@@ -50,6 +50,7 @@ class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
         self.var_id = 0
         self.offset = 0
         self.length = 0
+        self.mode = "read"
         self.data = [0, 0]
         self.table_data = [["Нет данных", ""]]
         #
@@ -130,56 +131,81 @@ class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
         return self.cfg_dict
 
     def write(self):
-        if self.interface.is_open:
-            self.interface.request(can_num=int(self.CANChanNUMSBox.value()),
-                                   dev_id=int(self.devIDSBox.value()),
-                                   mode="write",
-                                   var_id=int(self.varIDSBox.value()),
-                                   offset=int(self.offsetSBox.value()),
-                                   d_len=int(self.lengthSBox.value()),
-                                   data=self.get_data_bytes(int(self.lengthSBox.value()))
-                                   )
-            self.state = 0
-        else:
-            self.state = 2
-        self.state_check()
+        try:
+            if self.interface.is_open:
+                parameters = self.get_action_parameters()
+                self.interface.request(**parameters)
+                self.state = 0
+            else:
+                self.state = 2
+            self.action_signal.emit([])
+            self.state_check()
+        except Exception as error:
+            print("can_unit: write :", error)
         pass
 
     def read(self):
         if self.interface.is_open:
             self.actionPButton.setEnabled(False)
-            self.interface.request(can_num=int(self.CANChanNUMSBox.value()),
-                                   dev_id=int(self.devIDSBox.value()),
-                                   mode="read",
-                                   var_id=int(self.varIDSBox.value()),
-                                   offset=int(self.offsetSBox.value()),
-                                   d_len=int(self.lengthSBox.value()),
-                                   data=[]
-                                   )
-            self.request_timer.singleShot(200, self.set_data_to_unit)
-            self.time_out = 7
+            parameters = self.get_action_parameters()
+            self.interface.request(**parameters)
+            self.request_timer.singleShot(150, self.set_data_to_unit)
+            self.time_out = 5
             self.state = 0
         else:
             self.state = 2
         self.state_check()
         pass
 
+    def get_action_mode(self):
+        if self.modeBox.currentText() in "Чтение":
+            return "read"
+        else:
+            return "write"
+
+    def get_action_parameters(self):
+        self.channel_num = int(self.CANChanNUMSBox.value())
+        self.dev_id = int(self.devIDSBox.value())
+        self.var_id = int(self.varIDSBox.value())
+        self.offset = int(self.offsetSBox.value())
+        self.length = int(self.lengthSBox.value())
+        self.mode = self.get_action_mode()
+        self.data = self.get_data_bytes(int(self.lengthSBox.value()))
+        return {"can_num": self.channel_num, "dev_id": self.dev_id,
+                "mode": self.mode, "var_id": self.var_id,
+                "offset": self.offset, "d_len":self.length,
+                "data": self.data}
+
+    def check_id_var(self, id_var):
+        res1, rtr, res2, offset, var_id, dev_id = self.interface.process_id_var(id_var)
+        if dev_id == self.dev_id and var_id == self.var_id and offset == self.offset:
+            return True
+        return False
+
     def set_data_to_unit(self):
         self.total_cnt += 1
-        id_var, data = self.interface.get_data()
-        self.idVarLine.setText("0x{:04X}".format(id_var))
-        if id_var != 0x0000:
-            if self.modeBox.currentText() in "Чтение":  # read
-                self.insert_data(data)
-            self.state = 0
-            self.get_data()
-            self.table_data = norby_data.frame_parcer(self.data)
-            # при приеме инициируем сигнал, который запустит отображение таблицы данных
-            self.action_signal.emit(self.table_data)
+        self.time_out -= 1
+        if self.time_out > 0:
+            self.request_timer.singleShot(50, self.set_data_to_unit)
+            id_var, data = self.interface.get_last_data()
+            self.idVarLine.setText("0x{:04X}".format(id_var))
+            if self.check_id_var(id_var):
+                if self.mode in "read":  # read
+                    self.insert_data(data)
+                self.state = 0
+                self.get_data()
+                self.table_data = norby_data.frame_parcer(self.data)
+                # при приеме инициируем сигнал, который запустит отображение таблицы данных
+                self.action_signal.emit(self.table_data)
+                self.actionPButton.setEnabled(True)
+                self.state_check()
+                self.time_out = 0
+            else:
+                self.state = 1
+                self.request_timer.singleShot(50, self.set_data_to_unit)
         else:
+            self.actionPButton.setEnabled(True)
             self.state = 1
-        self.actionPButton.setEnabled(True)
-        self.state_check()
         pass
 
     def action(self):
@@ -322,6 +348,10 @@ class ClientGUIWindow(QtWidgets.QFrame, can_usb_bridge_client_widget.Ui_Form):
         #
         if self.interface is None:
             self.interface = usb_can_bridge.MyUSBCANDevice(serial_numbers=[], debug=True)
+            self.connectionPButton.clicked.connect(self.connect)
+        else:
+            self.connectionPButton.hide()
+            self.devIDLEdit.hide()
         # контейнеры для вставки юнитов
         self.units_widgets = Widgets(self.unitsSArea, interface=self.interface)
         self.units_widgets.action.connect(self.data_table_slot)
@@ -340,8 +370,7 @@ class ClientGUIWindow(QtWidgets.QFrame, can_usb_bridge_client_widget.Ui_Form):
         self.cycle_step_count = 0
         self.cycleStartPButton.clicked.connect(lambda: self.cycleTimer.start(1000))
         self.cycleStopPButton.clicked.connect(self.stop_request_cycle)
-        #
-        self.connectionPButton.clicked.connect(self.connect)
+
         #
         self.load_init_cfg()
         self.interface.serial_numbers.append(self.serial_number)
@@ -367,9 +396,8 @@ class ClientGUIWindow(QtWidgets.QFrame, can_usb_bridge_client_widget.Ui_Form):
 
     def connect(self):
         self.serial_number = self.devIDLEdit.text()
-        self.interface.serial_numbers.append(self.serial_number)
+        self.interface.serial_numbers = [self.serial_number]
         self.interface.reconnect()
-
         pass
 
     def start_request_cycle(self):
@@ -407,14 +435,15 @@ class ClientGUIWindow(QtWidgets.QFrame, can_usb_bridge_client_widget.Ui_Form):
         # на всякий пожарный сохраняем текущую конфигурацию
         self.save_init_cfg()
         #
-        self.dataTWidget.setRowCount(len(table_data))
-        for row in range(len(table_data)):
-            for column in range(self.dataTWidget.columnCount()):
-                try:
-                    table_item = QtWidgets.QTableWidgetItem(table_data[row][column])
-                    self.dataTWidget.setItem(row, column, table_item)
-                except IndexError:
-                    pass
+        if table_data:
+            self.dataTWidget.setRowCount(len(table_data))
+            for row in range(len(table_data)):
+                for column in range(self.dataTWidget.columnCount()):
+                    try:
+                        table_item = QtWidgets.QTableWidgetItem(table_data[row][column])
+                        self.dataTWidget.setItem(row, column, table_item)
+                    except IndexError:
+                        pass
         pass
 
     def dlt_unit(self):

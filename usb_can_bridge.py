@@ -33,7 +33,7 @@ class MyUSBCANDevice(serial.Serial):
         self.row_data = b""
         self.read_timeout = 0.2
         self.request_num = 0
-        self.debug = False
+        self.debug = True
         self.crc_check = True
         for key in sorted(kw):
             if key == "serial_numbers":
@@ -53,6 +53,8 @@ class MyUSBCANDevice(serial.Serial):
         self.request_num = 0
         self.nansw = 0  # неответы
         self.answer_data = []
+        self.req_number = 0
+        self.last_answer_data = None
         self.answer_data_buffer = []
         self.com_rec_flag = 0
         self.read_data = b""
@@ -71,7 +73,7 @@ class MyUSBCANDevice(serial.Serial):
         self.read_write_thread = None
         self._close_event = threading.Event()
         self.read_write_thread = threading.Thread(target=self.thread_function, args=(), daemon=True)
-        self.read_write_thread.start()
+
         self.log_lock = threading.Lock()
         self.com_send_lock = threading.Lock()
         self.ans_data_lock = threading.Lock()
@@ -89,6 +91,10 @@ class MyUSBCANDevice(serial.Serial):
                         try:
                             self.open()
                             self._print("Success connection!")
+                            try:
+                                self.read_write_thread.start()
+                            except Exception:
+                                pass
                             self.state = 1
                             self.nansw = 0
                             return True
@@ -100,14 +106,15 @@ class MyUSBCANDevice(serial.Serial):
 
     def _print(self, *args):
         if self.debug:
-            print_str = get_time() + " "
+            print_str = "ucb: " + get_time()
             for arg in args:
                 print_str += " " + str(arg)
             print(print_str)
 
     def close_id(self):
-        self._print("Try to close comport <0x%s>:" % self.port)
+        self._print("Try to close COM-port <0x%s>:" % self.port)
         self.close()
+        time.sleep(0.1)
         self.state = 0
         pass
 
@@ -120,8 +127,6 @@ class MyUSBCANDevice(serial.Serial):
         real_len = min(d_len, len(data)) if mode is "write" else d_len
         part_offset = 0
         packets_list = []
-        id_var = 0x00
-        init_id_var = 0x00
         while real_len > 0:
             part_len = 8 if real_len >= 8 else real_len
             real_len -= 8
@@ -143,10 +148,10 @@ class MyUSBCANDevice(serial.Serial):
             self.can_log_buffer.append(self.can_log_str(id_var, data[0:real_len], real_len))
         self._print("Try to send command <0x%08X> (%s):" % (id_var, self._id_var_to_str(id_var)))
 
-    def _id_var(self, id_var):
+    @staticmethod
+    def process_id_var(id_var):
         """
         process id_var_value
-        :param self:
         :param id_var: id_var according to title
         :return: егзду of id_var fields
         """
@@ -156,15 +161,14 @@ class MyUSBCANDevice(serial.Serial):
         res2 = (id_var >> 2) & 0x01
         rtr = (id_var >> 1) & 0x01
         res1 = (id_var >> 0) & 0x01
-
         return res1, rtr, res2, offset, var_id, dev_id
 
     def _id_var_to_str(self, id_var):
         ret_str = ""
-        ret_str += "dev_id:%2d " % self._id_var(id_var)[5]
-        ret_str += "var_id:%2d " % self._id_var(id_var)[4]
-        ret_str += "offs:%3d " % self._id_var(id_var)[3]
-        ret_str += "rtr:%d-%s " % (self._id_var(id_var)[1], "wr" if self._id_var(id_var)[1] else "rd")
+        ret_str += "dev_id:%2d " % self.process_id_var(id_var)[5]
+        ret_str += "var_id:%2d " % self.process_id_var(id_var)[4]
+        ret_str += "offs:%3d " % self.process_id_var(id_var)[3]
+        ret_str += "rtr:%d-%s " % (self.process_id_var(id_var)[1], "rd" if self.process_id_var(id_var)[1] else "wr")
         return ret_str
 
     def thread_function(self):
@@ -218,7 +222,7 @@ class MyUSBCANDevice(serial.Serial):
                                     self.serial_log_buffer.append(get_time() + bytes_array_to_str(read_data))
                                 read_data = buf + bytes(read_data)  # прибавляем к новому куску старый кусок
                                 self._print("Data to process: ", bytes_array_to_str(read_data))
-                                if len(read_data) >= 4:
+                                if len(read_data) >= 8:
                                     if read_data[0] == 0x00 or read_data[0] == 0x01:
                                         data_len = int.from_bytes(read_data[6:8], byteorder="little")
                                         if len(read_data) >= data_len + 8:  # проверка на достаточную длину приходящего пакета
@@ -231,6 +235,8 @@ class MyUSBCANDevice(serial.Serial):
                                             self.answer_data_buffer.extend(read_data[8:8 + data_len])
                                             if finish:
                                                 with self.ans_data_lock:
+                                                    self.last_answer_data = [id_var,
+                                                                             self.answer_data_buffer]
                                                     self.answer_data.append([id_var,
                                                                              self.answer_data_buffer])
                                                     self._print(self.can_log_str(id_var, self.answer_data_buffer, len(self.answer_data_buffer)))
@@ -238,6 +244,7 @@ class MyUSBCANDevice(serial.Serial):
                                                     self.can_log_buffer.append(
                                                         self.can_log_str(id_var, self.answer_data_buffer, len(self.answer_data_buffer)))
                                                 self.answer_data_buffer = []
+                                                finish = False
                                         else:
                                             buf = read_data
                                             read_data = bytearray(b"")
@@ -260,7 +267,7 @@ class MyUSBCANDevice(serial.Serial):
                     self._close_event.clear()
                     return
         except Exception as error:
-            self._print(error)
+            self._print("Tx thread ERROR: " + str(error))
         pass
 
     def get_can_log(self):
@@ -286,7 +293,25 @@ class MyUSBCANDevice(serial.Serial):
                         data.append((self.answer_data[-1][1][2*i] << 8) + (self.answer_data[-1][1][2*i+1] << 0))
                     except IndexError:
                         data.append((self.answer_data[-1][1][2*i] << 8))
-                self.answer_data = []
+        try:
+            self.answer_data.pop(-1)
+        except IndexError:
+            pass
+        return id_var, data
+
+    def get_last_data(self):
+        with self.ans_data_lock:
+            if self.last_answer_data:
+                id_var = self.last_answer_data[0]
+                data = []
+                for i in range((len(self.last_answer_data[1]) + 1) // 2):
+                    try:
+                        data.append((self.last_answer_data[1][2 * i] << 8) + (self.last_answer_data[1][2 * i + 1] << 0))
+                    except IndexError:
+                        data.append((self.last_answer_data[1][2 * i] << 8))
+            else:
+                id_var = 0
+                data = []
         return id_var, data
 
     def can_log_str(self, id_var, bytes_data, data_len):
@@ -330,13 +355,14 @@ def bytes_array_to_str(bytes_array):
 
 
 if __name__ == "__main__":
-    my_can = MyUSBCANDevice(serial_numbers=["0000ACF00000"], debug=True)
+    my_can = MyUSBCANDevice(serial_numbers=["205135995748"], debug=True)
     my_can.open_id()
-    # Проверка коанды зеркала
-    my_can.request(can_num=0, dev_id=6, mode="write", var_id=4, offset=0, d_len=18, data=[j for j in range(18)])
-    my_can.request(can_num=0, dev_id=6, mode="read", var_id=4, offset=0, d_len=17, data=[])
+    # Проверка команды зеркала
+    my_can.request(can_num=0, dev_id=6, mode="write", var_id=4, offset=16, d_len=1, data=[0x2A])
     time.sleep(2)
-    my_can.request(can_num=0, dev_id=6, mode="read", var_id=4, offset=1, d_len=17, data=[])
+    my_can.request(can_num=0, dev_id=6, mode="read", var_id=7, offset=0, d_len=128, data=[])
     time.sleep(2)
-    print(my_can.answer_data)
+    print(my_can.get_data())
+    # my_can.request(can_num=0, dev_id=6, mode="read", var_id=4, offset=1, d_len=17, data=[])
+
     pass
