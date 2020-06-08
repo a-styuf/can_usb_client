@@ -131,8 +131,8 @@ def frame_parcer(frame):
                         data.append(["MEM: ISS wr_ptr", "%d" % val_from(frame, 22, 2)])
                         data.append(["MEM: DCR wr_ptr", "%d" % val_from(frame, 24, 2)])
                         data.append(["MEM: ISS rd_ptr", "%d" % val_from(frame, 118, 2)])
-                        data.append(["MEM: DCR rd_ptr", "%d" % val_from(frame, 120, 2)])
-                        data.append(["MEM: ISS vol", "%d" % val_from(frame, 122, 2)])
+                        data.append(["MEM: ISS vol", "%d" % val_from(frame, 120, 2)])
+                        data.append(["MEM: DCR rd_ptr", "%d" % val_from(frame, 122, 2)])
                         data.append(["MEM: DCR vol", "%d" % val_from(frame, 124, 2)])
                         #
                         data.append(["CRC-16", "0x%04X" % crc16_calc(frame, 128)])
@@ -149,7 +149,7 @@ def frame_parcer(frame):
                         data.append(["Статус", "0x%02X" % val_from(frame, 15, 1)])
                         #
                         for num in range(8):
-                            sub_offs = num*6 + 30
+                            sub_offs = num*12 + 30
                             data.append(["ТМИ%d: №" % num, "%d" % val_from(frame, 0 + sub_offs, 1)])
                             data.append(["ТМИ%d: ПН" % num, "0x%04X" % val_from(frame, 1 + sub_offs, 1)])
                             data.append(["ТМИ%d: U,В" % num, "%.2f" % (val_from(frame, 2 + sub_offs, 1)/(2**4))])
@@ -222,7 +222,7 @@ def val_from(frame, offset, leng, byteorder="little", signed=False):
     :param signed: знаковая или не знаковая переменная (True, False)
     :return: интовое значение переменной
     """
-    print(frame[offset + 0:offset + leng], " %04X" % int.from_bytes(frame[offset + 0:offset + leng], byteorder=byteorder, signed=signed))
+    # print(frame[offset + 0:offset + leng], " %04X" % int.from_bytes(frame[offset + 0:offset + leng], byteorder=byteorder, signed=signed))
     return int.from_bytes(frame[offset + 0:offset + leng], byteorder=byteorder, signed=signed)
 
 
