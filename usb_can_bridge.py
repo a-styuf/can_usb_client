@@ -288,11 +288,8 @@ class MyUSBCANDevice(serial.Serial):
         with self.ans_data_lock:
             if self.answer_data:
                 id_var = self.answer_data[-1][0]
-                for i in range((len(self.answer_data[-1][1]) + 1)//2):
-                    try:
-                        data.append((self.answer_data[-1][1][2*i] << 8) + (self.answer_data[-1][1][2*i+1] << 0))
-                    except IndexError:
-                        data.append((self.answer_data[-1][1][2*i] << 8))
+                for i in range(len(self.answer_data[-1][1])):
+                    data.append(self.answer_data[-1][1][i])
         try:
             self.answer_data.pop(-1)
         except IndexError:
@@ -304,11 +301,8 @@ class MyUSBCANDevice(serial.Serial):
             if self.last_answer_data:
                 id_var = self.last_answer_data[0]
                 data = []
-                for i in range((len(self.last_answer_data[1]) + 1) // 2):
-                    try:
-                        data.append((self.last_answer_data[1][2 * i] << 8) + (self.last_answer_data[1][2 * i + 1] << 0))
-                    except IndexError:
-                        data.append((self.last_answer_data[1][2 * i] << 8))
+                for i in range(len(self.last_answer_data[1])):
+                    data.append(self.last_answer_data[1][i])
             else:
                 id_var = 0
                 data = []

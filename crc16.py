@@ -34,6 +34,17 @@ crc16tab = [0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
             0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0]
 
 
+def calc_bytes(buf, len):
+    d = 1
+    crc = 0x1D0F
+    for i in range(len):
+        index = ((crc >> 8) ^ buf[i + d]) & 0x00FF
+        crc = (crc << 8) ^ crc16tab[index]
+        crc &= 0xFFFF
+        d = -d
+    return crc
+
+
 def calc(buf, buf_len, endian="big"):
     crc = 0x1D0F  # initial value
     global crc16tab
@@ -65,17 +76,6 @@ def calc_str(buf_string, endian="big"):
         data_int.append(int(var, 16))
     crc16 = calc(data_int, len(data_int), endian=endian)
     return crc16
-
-
-def calc_bytes(buf, len):
-    d = 1
-    crc = 0x1D0F
-    for i in range(len):
-        index = ((crc >> 8) ^ buf[i + d]) & 0x00FF
-        crc = (crc << 8) ^ crc16tab[index]
-        crc &= 0xFFFF
-        d = -d
-    return crc
 
 
 ############################

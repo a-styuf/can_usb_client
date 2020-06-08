@@ -51,7 +51,7 @@ class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
         self.offset = 0
         self.length = 0
         self.mode = "read"
-        self.data = [0, 0]
+        self.data = [0]
         self.table_data = [["Нет данных", ""]]
         #
         self.total_cnt = 1
@@ -92,7 +92,7 @@ class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
         self.length = self.cfg_dict.get("length", "0")
         self.lengthSBox.setValue(int(self.length))
         #
-        data = self.cfg_dict.get("data", "0000").split(" ")
+        data = self.cfg_dict.get("data", "00").split(" ")
         self.data = [int(var, 16) for var in data]
         self.insert_data(self.data)
         #
@@ -127,7 +127,7 @@ class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
         if self.modeBox.currentText() == "Чтение":
             pass
         else:
-            self.cfg_dict["data"] = " ".join(["%04X" % var for var in self.data])
+            self.cfg_dict["data"] = " ".join(["%02X" % var for var in self.data])
         return self.cfg_dict
 
     def write(self):
@@ -188,7 +188,7 @@ class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
         if self.time_out > 0:
             self.request_timer.singleShot(50, self.set_data_to_unit)
             id_var, data = self.interface.get_last_data()
-            self.idVarLine.setText("0x{:04X}".format(id_var))
+            self.idVarLine.setText("0x{:02X}".format(id_var))
             if self.check_id_var(id_var):
                 if self.mode in "read":  # read
                     self.insert_data(data)
@@ -196,7 +196,10 @@ class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
                 self.get_data()
                 self.table_data = norby_data.frame_parcer(self.data)
                 # при приеме инициируем сигнал, который запустит отображение таблицы данных
-                self.action_signal.emit(self.table_data)
+                try:
+                    self.action_signal.emit(self.table_data)
+                except TypeError:
+                    pass
                 self.actionPButton.setEnabled(True)
                 self.state_check()
                 self.time_out = 0
@@ -236,7 +239,7 @@ class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
         for row in range(self.dataTable.rowCount()):
             for column in range(self.dataTable.columnCount()):
                 try:
-                    table_item = QtWidgets.QTableWidgetItem("%04X" % data[row*8 + column])
+                    table_item = QtWidgets.QTableWidgetItem("%02X" % data[row*(self.dataTable.columnCount()) + column])
                 except (IndexError, TypeError):
                     table_item = QtWidgets.QTableWidgetItem(" ")
                 self.dataTable.setItem(row, column, table_item)
@@ -257,7 +260,6 @@ class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
         data = []
         data_words = self.get_data()
         for var in data_words:
-            data.append((var >> 8) & 0xFF)
             data.append((var >> 0) & 0xFF)
         return data[:length]
 
@@ -275,6 +277,8 @@ class Widgets(QtWidgets.QVBoxLayout):
         #
         self.total_cnt = 1
         self.aw_err_cnt = 0
+        #
+        self.setContentsMargins(5, 5, 0, 0)
         pass
 
     def add_unit(self):
@@ -356,6 +360,7 @@ class ClientGUIWindow(QtWidgets.QFrame, can_usb_bridge_client_widget.Ui_Form):
         self.units_widgets = Widgets(self.unitsSArea, interface=self.interface)
         self.units_widgets.action.connect(self.data_table_slot)
         self.setLayout(self.units_widgets)
+
         # привязка сигналов к кнопкам
         #
         self.addUnitPButton.clicked.connect(self.units_widgets.add_unit)
