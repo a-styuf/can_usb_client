@@ -117,14 +117,16 @@ class MyUSBCANDevice(serial.Serial):
         time.sleep(0.1)
         self.state = 0
         pass
-
     def reconnect(self):
         self.close_id()
         self.open_id()
 
     def request(self, can_num=0, dev_id=0, mode="read", var_id=0, offset=0, d_len=0, data=None):
-        rtr = 0 if mode is "write" else 1
-        real_len = min(d_len, len(data)) if mode is "write" else d_len
+        rtr = 0 if mode == "write" else 1
+
+        if data is None:
+            data = []
+        real_len = min(d_len, len(data)) if mode == "write" else d_len
         part_offset = 0
         packets_list = []
         while real_len > 0:
@@ -147,6 +149,7 @@ class MyUSBCANDevice(serial.Serial):
                      ((0x00 & 0x01) << 2) | ((rtr & 0x01) << 1) | ((0x00 & 0x01) << 0)
             self.can_log_buffer.append(self.can_log_str(id_var, data[0:real_len], real_len))
         self._print("Try to send command <0x%08X> (%s):" % (id_var, self._id_var_to_str(id_var)))
+        return id_var
 
     @staticmethod
     def process_id_var(id_var):
@@ -271,12 +274,14 @@ class MyUSBCANDevice(serial.Serial):
         pass
 
     def get_can_log(self):
+        log = None
         with self.log_lock:
             log = copy.deepcopy(self.can_log_buffer)
             self.can_log_buffer = []
         return log
 
     def get_serial_log(self):
+        log = None
         with self.log_lock:
             log = copy.deepcopy(self.serial_log_buffer)
             self.serial_log_buffer = []

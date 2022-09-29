@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>824</width>
     <height>245</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>800</width>
+    <width>810</width>
     <height>245</height>
    </size>
   </property>
@@ -292,7 +292,7 @@
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
          <property name="maximum">
-          <number>2048</number>
+          <number>100000000</number>
          </property>
         </widget>
        </item>
@@ -495,7 +495,7 @@
      </property>
      <property name="minimumSize">
       <size>
-       <width>520</width>
+       <width>540</width>
        <height>150</height>
       </size>
      </property>
@@ -520,7 +520,7 @@
       <number>8</number>
      </property>
      <property name="columnCount">
-      <number>15</number>
+      <number>16</number>
      </property>
      <attribute name="horizontalHeaderVisible">
       <bool>true</bool>
@@ -625,7 +625,7 @@
       </property>
       <property name="font">
        <font>
-        <pointsize>7</pointsize>
+        <pointsize>5</pointsize>
        </font>
       </property>
      </row>
@@ -635,7 +635,7 @@
       </property>
       <property name="font">
        <font>
-        <pointsize>7</pointsize>
+        <pointsize>6</pointsize>
        </font>
       </property>
      </column>
@@ -645,7 +645,7 @@
       </property>
       <property name="font">
        <font>
-        <pointsize>7</pointsize>
+        <pointsize>6</pointsize>
        </font>
       </property>
      </column>
@@ -709,13 +709,86 @@
        </font>
       </property>
      </column>
-     <column/>
-     <column/>
-     <column/>
-     <column/>
-     <column/>
-     <column/>
-     <column/>
+     <column>
+      <property name="text">
+       <string>8</string>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>7</pointsize>
+       </font>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>9</string>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>7</pointsize>
+       </font>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>10</string>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>7</pointsize>
+       </font>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>11</string>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>7</pointsize>
+       </font>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>12</string>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>7</pointsize>
+       </font>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>13</string>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>7</pointsize>
+       </font>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>14</string>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>7</pointsize>
+       </font>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>15</string>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>7</pointsize>
+       </font>
+      </property>
+     </column>
      <item row="0" column="0">
       <property name="text">
        <string>00</string>
