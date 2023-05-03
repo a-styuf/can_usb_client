@@ -407,7 +407,7 @@ class ClientGUIWindow(QtWidgets.QFrame, can_usb_bridge_client_widget.Ui_Form):
 
     def start_request_cycle(self):
         period = self.cycleIntervalSBox_3.value()
-        self.cycleTimer.setInterval(period * 1000)
+        self.cycleTimer.setInterval(int(period * 1000))
         #
         unit_num = len(self.units_widgets.unit_list)
         if self.cycle_step_count == 0:
@@ -419,12 +419,12 @@ class ClientGUIWindow(QtWidgets.QFrame, can_usb_bridge_client_widget.Ui_Form):
             if self.cycle_step_count == 0:
                 self.stop_request_cycle()
         elapsed_time = period * self.cycle_step_count
-        self.cycleElapsedTimeEdit.setTime(QtCore.QTime(0, 0).addSecs(elapsed_time))
+        self.cycleElapsedTimeEdit.setTime(QtCore.QTime(0, 0).addSecs(int(elapsed_time)))
         #
         self.units_widgets.unit_list[(unit_num - 1) - (self.cycle_step_count % unit_num)].action()
         #
         try:
-            self.cyclePrBar.setValue(100 - ((100 * self.cycle_step_count) / (self.cycleNumSBox_3.value() * unit_num)))
+            self.cyclePrBar.setValue(int(100 - ((100 * self.cycle_step_count) / (self.cycleNumSBox_3.value() * unit_num))))
         except ValueError:
             self.cyclePrBar.setValue(100)
         pass
