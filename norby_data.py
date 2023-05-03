@@ -7,12 +7,17 @@
 #        table_list - список подсписков (подсписок - ["Имя", "Значение"]) - оба поля текстовые
 
 import threading
+import struct
+ADCS_status = ["UNKNOWN", "ST_IN_PROGRESS", "ST_SUCCESS_END",
+                "ST_ERROR", "ST_ERROR_TIMEOUT", "ST_STOPPED"]
 
 # замок для мультипоточного запроса разбора данных
 data_lock = threading.Lock()
 # раскрашивание переменных
 # модули
 linking_module = 6
+ADCS_module = 4
+
 # тип кадров
 lm_beacon = 0x80
 lm_tmi = 0x81
@@ -20,6 +25,20 @@ lm_full_tmi = 0x82
 lm_cyclogram_result = 0x89
 lm_load_param = 0x8A
 
+ADCS_calib = 0x17
+ADCS_settings = 0x18
+LOG_TMI2_rec = 0x22
+LOG_TMI3_rec = 0x23
+LOG_TMI5_rec = 0x25
+LOG_TMI6_rec = 0x26
+LOG_TMI9_rec = 0x27
+
+TMI0_pack_t = 0x00
+TMI2_pack_t = 0x02
+TMI3_pack_t = 0x03
+TMI5_pack_t = 0x05
+TMI6_pack_t = 0x06
+TMI9_pack_t = 0x09
 
 def frame_parcer(frame):
     try:
@@ -34,8 +53,13 @@ def frame_parcer(frame):
             except Exception as error:
                 print(error)
             if 0x0FF1 == val_from(frame, 0, 2):  # проверка на метку кадра
-                if get_id_loc_data(val_from(frame, 2, 2))["dev_id"] == linking_module:
-                    if get_id_loc_data(val_from(frame, 2, 2))["data_code"] == lm_beacon:
+
+                new_header = bool(val_from(frame, 2, 1) & 0x80)
+                id_loc_raw  = val_from(frame, 4, 2) if new_header else val_from(frame, 2, 2)
+                id_loc_data = get_id_loc_data(id_loc_raw)
+
+                if id_loc_data["dev_id"] == linking_module:
+                    if id_loc_data["data_code"] == lm_beacon:
                         #
                         data.append(["Метка кадра", "0x%04X" % val_from(frame, 0, 2)])
                         data.append(["Определитель", "0x%04X" % val_from(frame, 2, 2)])
@@ -48,7 +72,7 @@ def frame_parcer(frame):
                         data.append(["Статус пит. ПН", "0x%02X" % val_from(frame, 15, 1)])
                         #
                         data.append(["CRC-16", "0x%04X" % crc16_calc(frame, 128)])
-                    elif get_id_loc_data(val_from(frame, 2, 2))["data_code"] == lm_tmi:
+                    elif id_loc_data["data_code"] == lm_tmi:
                         #
                         data.append(["Метка кадра", "0x%04X" % val_from(frame, 0, 2)])
                         data.append(["Определитель", "0x%04X" % val_from(frame, 2, 2)])
@@ -80,7 +104,7 @@ def frame_parcer(frame):
                         data.append(["Память ДКР объем", "%d" % val_from(frame, 58, 2)])
                         #
                         data.append(["CRC-16", "0x%04X" % crc16_calc(frame, 128)])
-                    elif get_id_loc_data(val_from(frame, 2, 2))["data_code"] == lm_full_tmi:
+                    elif id_loc_data["data_code"] == lm_full_tmi:
                         #
                         data.append(["Метка кадра", "0x%04X" % val_from(frame, 0, 2)])
                         data.append(["Определитель", "0x%04X" % val_from(frame, 2, 2)])
@@ -175,7 +199,7 @@ def frame_parcer(frame):
                         data.append(["MEM: DCR vol", "%d" % val_from(frame, 124, 2)])
                         #
                         data.append(["CRC-16", "0x%04X" % crc16_calc(frame, 128)])
-                    elif get_id_loc_data(val_from(frame, 2, 2))["data_code"] == lm_cyclogram_result:
+                    elif id_loc_data["data_code"] == lm_cyclogram_result:
                         #
                         data.append(["Метка кадра", "0x%04X" % val_from(frame, 0, 2)])
                         data.append(["Определитель", "0x%04X" % val_from(frame, 2, 2)])
@@ -201,7 +225,7 @@ def frame_parcer(frame):
                             data.append([" ТМИ%d: ПН ст." % num, "0x%04X" % val_from(frame, 9 + sub_offs, 1)])
                         #
                         data.append(["CRC-16", "0x%04X" % crc16_calc(frame, 128)])
-                    elif get_id_loc_data(val_from(frame, 2, 2))["data_code"] == lm_load_param:
+                    elif id_loc_data["data_code"] == lm_load_param:
                         #
                         data.append(["Метка кадра", "0x%04X" % val_from(frame, 0, 2)])
                         data.append(["Определитель", "0x%04X" % val_from(frame, 2, 2)])
@@ -225,6 +249,365 @@ def frame_parcer(frame):
                         data.append(["Номер кадра, шт", "%d" % val_from(frame, 4, 2)])
                         #
                         data.append(["Неизвестный тип данных", "0"])
+                elif id_loc_data["dev_id"] == ADCS_module:
+                    first_loc_flag = not bool(id_loc_raw & 0x0100)
+                    data.append(["Метка кадра", "0x%04X" % val_from(frame, 0, 2)])
+
+                    header_offset = 2 if new_header else 0
+                    # header_size = 12 if new_header else 10
+                    if new_header:
+                        data.append(["id_sat", "0x%04X" % val_from(frame, 2, 2)])
+
+                    data.append(["Определитель", "0x%04X" % id_loc_raw])
+
+                    data.append(["Номер массива/кадра", "%d" % val_from(frame, 4+header_offset, 2)])
+
+                    data.append(["Время кадра, с", "%d" % val_from(frame, 6+header_offset, 4)])
+
+
+                    if id_loc_data["data_code"] == ADCS_calib:
+                        data.append(["Тип данных", "Калибровка"])
+                    elif id_loc_data["data_code"] == ADCS_settings:
+                        data.append(["Тип данных", "Настройки"])
+                        # if first_loc:
+                        #     data.append(["om.flag_scan_ports", "0x%02X" %
+                        #                  val_from(frame, header_size + 0, 1)])
+                        #     data.append(["om.flag_polling", "0x%02X" %
+                        #                  val_from(frame, header_size + 1, 1)])
+                        #     data.append(["om.ON_list", "0x%08X" %
+                        #                  val_from(frame, header_size + 2, 4)])
+                        #     data.append(["om.timing", "0x%08X" %
+                        #                  val_from(frame, header_size + 6, 4)])
+                        #     data.append(["om.req_en", "0x%08X" %
+                        #                  val_from(frame, header_size + 10, 4)])
+                        #     data.append(["om.reboot_delay", "0x%02X" %
+                        #                  val_from(frame, header_size + 14, 2)])
+                        # elif val_from(frame, 6 + header_offset, 2) == (4-2):
+                        #     data.append(["i2c.gam_set.mode", "0x%02X" %
+                        #                  val_from(frame, header_size + 0, 1)])
+                        #     data.append(["...", "..."])
+                        #     data.append(["i2c.gam_set.res8", "0x%02X" %
+                        #                  val_from(frame, header_size + 9, 1)])
+                        # elif val_from(frame, 6 + header_offset, 2) == (5-2):
+                        #     data.append(["mt.flag_mt_par", "0x%02X" %
+                        #                  val_from(frame, header_size + 0, 1)])
+                        #     data.append(["mt.flag_mt_dir", "0x%02X" %
+                        #                  val_from(frame, header_size + 1, 1)])
+                        #     data.append(["mt.reverse_axis", "0x%02X" %
+                        #                  val_from(frame, header_size + 2, 1)])
+                        #     data.append(["mt.disable_axis", "0x%02X" %
+                        #                  val_from(frame, header_size + 3, 1)])
+                        #
+                        #     data.append(["...", "..."])
+                        #
+                        #     data.append(["mt.power_limit", "0x%08X" %
+                        #                  val_from(frame, header_size + 4, 4)])
+                    elif id_loc_data["data_code"] == TMI2_pack_t or\
+                            id_loc_data["data_code"] == LOG_TMI2_rec:
+                        data.append(["Тип данных", "ТМИ 2"])
+                        if id_loc_data["data_code"] == TMI2_pack_t or not first_loc_flag:
+                            data.append(["Высота, 0.1м", "%d" %
+                                         val_from(frame, 52 - 40, 4, signed=True)])
+                        data.append(["Широта", "%d" % val_from(frame, 56 - 40, 4, signed=True)])
+                        data.append(["Долгота", "%d" % val_from(frame, 60 - 40, 4, signed=True)])
+                        data.append(["Горизонтальная скорость, 0,01м/с", "%d" %
+                                     val_from(frame, 64 - 40 + 8, 4, signed=True)])
+                        data.append(["Азимут скорости", "%d" %
+                                     val_from(frame, 68 - 40, 4, signed=True)])
+                        data.append(["Вертикальная скорость", "%d" %
+                                     val_from(frame, 72 - 40, 4, signed=True)])
+
+                        data.append(["Время по датчику ГЛОНАСС", "%d" %
+                                     val_from(frame, 76 - 40, 4)])
+
+                        gnss_val = val_from(frame, 80 - 40, 1)
+                        data.append(["Валидность данных ГЛОНАСС", str(bool(gnss_val & 0x80))])
+                        data.append(["Количество спутников", "%d" % (gnss_val & (~0x80))])
+
+                        data.append(["Видимость антенны и солнца", "%d" %
+                                     val_from(frame, 81 - 40, 1)])
+                        data.append(["Счетчик перезапусков", "%d" %
+                                     val_from(frame, 82 - 40, 4)])
+
+                        data.append(["Модуль ускорения", "%d" % val_from(frame, 86 - 40, 2)])
+
+                        for i in range(6):
+                            data.append(["Температура контроллера ДСГ %d" % (i + 1), "%d" %
+                                         val_from(frame, 134 + 1 * i - 40, 1, signed=True)])
+                            data.append(["Медианная температура ДСГ %d" % (i + 1), "%d" %
+                                         val_from(frame, 141 + 1 * i - 40, 1, signed=True)])
+
+                            data.append(["Статус модуля ДСГ %d (битовая маска)" % (i + 1), "0x%02X" %
+                                         val_from(frame, 150 + 1 * i - 40, 1, signed=True)])
+                            data.append(["Вектор магнитной индукции ДСГ %d" % (i + 1), "(%d, %d, %d)" %
+                                         (val_from(frame, 88 + 3 * i - 40, 1, signed=True),
+                                          val_from(frame, 89 + 3 * i - 40, 1, signed=True),
+                                          val_from(frame, 90 + 3 * i - 40, 1, signed=True))])
+                            data.append(["Вектор угловой скорости ДСГ %d" % (i + 1), "(%d, %d, %d)" %
+                                         (val_from(frame, 109 + 3 * i - 40, 1, signed=True),
+                                          val_from(frame, 110 + 3 * i - 40, 1, signed=True),
+                                          val_from(frame, 111 + 3 * i - 40, 1, signed=True))])
+
+                        data.append(["Вектор магнитной индукции СОП", "(%d, %d, %d)" %
+                                     (val_from(frame, 106 - 40, 1, signed=True),
+                                      val_from(frame, 107 - 40, 1, signed=True),
+                                      val_from(frame, 108 - 40, 1, signed=True))])
+                        data.append(["Вектор  угловой скорости СОП", "(%d, %d, %d)" %
+                                     (val_from(frame, 127 - 40, 1, signed=True),
+                                      val_from(frame, 128 - 40, 1, signed=True),
+                                      val_from(frame, 129 - 40, 1, signed=True))])
+
+                        data.append(["Угол между парой векторов приоритета 1", "%d" %
+                                     val_from(frame, 130 - 40, 2, signed=True)])
+                        data.append(["Угол между парой векторов приоритета 2", "%d" %
+                                     val_from(frame, 132 - 40, 2, signed=True)])
+
+                        data.append(["Температура контроллера СОП", "%d" %
+                                     val_from(frame, 140 - 40, 1, signed=True)])
+                        data.append(["Температура модуля СОП", "%d" %
+                                     val_from(frame, 147 - 40, 1, signed=True)])
+
+                        ADCS_stat = val_from(frame, 148 - 40, 2)
+                        ADCS_dev_id = (ADCS_stat >> 0) & 0x0F
+                        mt_dis_axes = (ADCS_stat >> 4) & 0x3F
+                        ADCS_cam =    (ADCS_stat >> 10) & 0x01
+                        ADCS_gant =   (ADCS_stat >> 11) & 0x01
+                        ADCS_can  =   (ADCS_stat >> 12) & 0x01
+                        data.append(["Статус модуля СОП (битовая маска)", "0x%04X" % ADCS_stat])
+
+                        data.append(["Dev_id", "%d" % ADCS_dev_id])
+                        data.append(["mt->disable_axis (Z-, Z+, Y-, Y+, X-, X+)", bin(mt_dis_axes)])
+                        # data.append(["Подключение камеры", str(bool(ADCS_cam))])
+                        data.append(["Подключение антенны", str(bool(ADCS_gant))])
+                        data.append(["Наличие ошибок CAN", str(bool(ADCS_can))])
+
+                        data.append(["время ТМИ2 (мс)", "%d" %
+                                     val_from(frame, 156 - 40, 4)])
+                        # data.append(["резерв 2", "%d" %
+                        #              val_from(frame, header_size + 148 - 40, 2)])
+
+                        data.append(["Set_Orientation_Accur", "%d" %
+                                     val_from(frame, 160 - 40, 1)])
+                        data.append(["Stop_Rotation_Status", "%d" %
+                                     val_from(frame, 161 - 40, 1)])
+                        data.append(["Stop_Rotation_Accur", "%d" %
+                                     val_from(frame, 162 - 40, 1)])
+                        data.append(["Set_Orientation_Status", "%d" %
+                                     val_from(frame, 163 - 40, 1)])
+                        data.append(["Orientation_Mode", "%d" %
+                                     val_from(frame, 164 - 40, 1)])
+
+                        data.append(["Версия прошивки ТМИ2", "%d" % val_from(frame, 165-40, 1)])
+                    elif id_loc_data["data_code"] == TMI3_pack_t or\
+                            id_loc_data["data_code"] == LOG_TMI3_rec:
+                        data.append(["Тип данных", "ТМИ 3"])
+                        if id_loc_data["data_code"] == TMI3_pack_t or not first_loc_flag:
+                            data.append(["оценка времени остановки", "%d" %
+                                         val_from(frame, 180-168, 2)])
+
+                        suffix = ["X+", "X-", "Y+", "Y-", "Z+", "Z-"]
+                        for i, sfx in enumerate(suffix):
+                            data.append(["Ток " + sfx, "%d" %
+                                         val_from(frame, 182 + 2 * i - 168, 2, signed=True)])
+
+                        for i in range(6):
+                            data.append(["Вектор углов СД %d" % (i + 1), "%d" %
+                                         val_from(frame, 194 + 2 * i - 168, 2)])
+                            data.append(["Вектор углов ДГ %d" % (i + 1), "%d" %
+                                         val_from(frame, 212 + 2 * i - 168, 2)])
+
+                        for i in range(3):
+                            data.append(["Вектор(%d) на Солнце в СК КА" % (i + 1), "%d" %
+                                         val_from(frame, 206 + 2 * i - 168, 2, signed=True)])
+                            data.append(["Вектор(%d) на Землю в СК КА" % (i + 1), "%d" %
+                                         val_from(frame, 224 + 2 * i - 168, 2, signed=True)])
+
+                        data.append(["время ТМИ3 (мс)", "%d" %
+                                     val_from(frame, 230 - 168, 4)])
+                        data.append(["резерв 5", "%d" %
+                                     val_from(frame, 234 - 168, 4)])
+                        data.append(["резерв 6", "%d" %
+                                     val_from(frame, 238-168, 4)])
+                        # data.append(["резерв 7", "%d" %
+                        #              val_from(frame, 242-156, 2)])
+                        data.append(["резерв 8", "%d" %
+                                     val_from(frame, 242 - 168, 1)])
+
+                        data.append(["Target 1 (X, Y, Z)", "(%d, %d, %d)" %
+                                     (val_from(frame, 243 - 168, 1, signed=True),
+                                      val_from(frame, 244 - 168, 1, signed=True),
+                                      val_from(frame, 245 - 168, 1, signed=True))])
+                        data.append(["Vector KA 1 (X, Y, Z)", "(%d, %d, %d)" %
+                                     (val_from(frame, 246 - 168, 1, signed=True),
+                                      val_from(frame, 247 - 168, 1, signed=True),
+                                      val_from(frame, 248 - 168, 1, signed=True))])
+                        data.append(["Target 2 (X, Y, Z)", "(%d, %d, %d)" %
+                                     (val_from(frame, 249 - 168, 1, signed=True),
+                                      val_from(frame, 250 - 168, 1, signed=True),
+                                      val_from(frame, 251 - 168, 1, signed=True))])
+                        data.append(["Vector KA 2 (X, Y, Z)", "(%d, %d, %d)" %
+                                     (val_from(frame, 252 - 168, 1, signed=True),
+                                      val_from(frame, 253 - 168, 1, signed=True),
+                                      val_from(frame, 254 - 168, 1, signed=True))])
+
+                        data.append(["Set_Rotation_Com_Status", "%d" %
+                                     val_from(frame, 255 - 168, 1)])
+
+                        data.append(["W(X, Y, Z)", "(%d, %d, %d)" %
+                                     (val_from(frame, 256 - 168, 1, signed=True),
+                                      val_from(frame, 257 - 168, 1, signed=True),
+                                      val_from(frame, 258 - 168, 1, signed=True))])
+
+                        try:
+                            stats = [ADCS_status[val_from(frame, 285 - 168, 1)],
+                                     ADCS_status[val_from(frame, 287 - 168, 1)],
+                                     ADCS_status[val_from(frame, 290 - 168, 1)]]
+                        except:
+                            stats = [val_from(frame, 285 - 168, 1),
+                                     val_from(frame, 287 - 168, 1),
+                                     val_from(frame, 290 - 168, 1)]
+
+                        data.append(["cam_photo_status", stats[0]])
+                        data.append(["ss_photo_status", stats[1]])
+                        data.append(["hs_photo_status", stats[1]])
+
+                        data.append(["cam_photo_command", "0x%02X" %
+                                     val_from(frame, 286 - 168, 1)])
+                        data.append(["ss_photo_command", "0x%02X" %
+                                     val_from(frame, 288 - 168, 2)])
+                        data.append(["hs_photo_command", "0x%02X" %
+                                     val_from(frame, 291 - 168, 2)])
+
+                        data.append(["версия прошивки", "%d" %
+                                     val_from(frame, 293 - 168, 1)])
+                    elif id_loc_data["data_code"] == TMI5_pack_t or \
+                            id_loc_data["data_code"] == LOG_TMI5_rec:
+                        data.append(["Тип данных", "ТМИ 5"])
+                        if id_loc_data["data_code"] == TMI5_pack_t or not first_loc_flag:
+                            data.append(["Высота", "%d" %
+                                         val_from(frame, 308-296, 8, to_double=True)])
+
+                        data.append(["Широта", "%d" %
+                                     val_from(frame, 316-296, 8, to_double=True)])
+                        data.append(["Долгота", "%d" %
+                                     val_from(frame, 324-296, 8, to_double=True)])
+                        data.append(["Горизонтальная скорость", "%d" %
+                                     val_from(frame, 332-296, 8, to_double=True)])
+                        data.append(["Азимут горизонтальной скорости", "%d" %
+                                     val_from(frame, 340-296, 8, to_double=True)])
+                        data.append(["Вертикальная скорость", "%d" %
+                                     val_from(frame, 348-296, 8, to_double=True)])
+
+                        data.append(["Время ГЛОНАСС (ЧЧ:ММ:СС.МС)", "%d:%d:%d.%d" %
+                                     (val_from(frame, 359-296, 1),
+                                      val_from(frame, 360-296, 1),
+                                      val_from(frame, 361-296, 1),
+                                      val_from(frame, 362-296, 1))])
+
+                        data.append(["Дата ГЛОНАСС (ДД.ММ.ГГ)", "%d.%d.%d" %
+                                     (val_from(frame, 358-296, 1),
+                                      val_from(frame, 357-296, 1),
+                                      val_from(frame, 356-296, 1))])
+
+                        gnss_val = val_from(frame, 363-296, 1)
+                        data.append(["Валидность данных ГЛОНАСС", str(bool(gnss_val & 0x80))])
+                        data.append(["Количество спутников", "%d" % (gnss_val & (~0x80))])
+
+                        for i in range(6):
+                            data.append(["Ускорение ДСГ %d (X, Y, Z)" % (i + 1), "(%d, %d, %d)" %
+                                         (val_from(frame, 364-296 + 6 * i, 2, signed=True),
+                                          val_from(frame, 366-296 + 6 * i, 2, signed=True),
+                                          val_from(frame, 368-296 + 6 * i, 2, signed=True))])
+
+                        data.append(["Ускорение СОП (X, Y, Z)", "(%d, %d, %d)" %
+                                     (val_from(frame, 400-296, 2, signed=True),
+                                      val_from(frame, 402-296, 2, signed=True),
+                                      val_from(frame, 404-296, 2, signed=True))])
+
+                        data.append(["Температуры СОП", "%d, %d, %d, %d" %
+                                     (val_from(frame, 406-296, 1, signed=True),
+                                      val_from(frame, 407-296, 1, signed=True),
+                                      val_from(frame, 408-296, 1, signed=True),
+                                      val_from(frame, 409-296, 1, signed=True))])
+
+                        data.append(["Время ТМИ5 (мс)", "%d" %
+                                     val_from(frame, 410-296, 4)])
+                        # data.append(["ТМИ5 резерв", "%d" %
+                        #              val_from(frame, 414-296, 7)])
+                        data.append(["Версия прошивки", "%d" %
+                                     val_from(frame, 421-296, 1)])
+                    elif id_loc_data["data_code"] == TMI6_pack_t or \
+                            id_loc_data["data_code"] == LOG_TMI6_rec:
+                        data.append(["Тип данных", "ТМИ 6"])
+
+                        for i in range(6):
+                            if (id_loc_data["data_code"] == TMI6_pack_t or not first_loc_flag) \
+                                    and i == 0:
+
+                                data.append(["Калиброванная угловая скорость ДСГ %d" % i, "(%d, %d, %d)" %
+                                             (val_from(frame, 436-424 + 6 * i, 2, signed=True),
+                                              val_from(frame, 438-424 + 6 * i, 2, signed=True),
+                                              val_from(frame, 440-424 + 6 * i, 2, signed=True))])
+                            data.append(["Калиброванные магнитометры ДСГ %d" % i, "(%d, %d, %d)" %
+                                         (val_from(frame, 478-424 + 6 * i, 2, signed=True),
+                                          val_from(frame, 480-424 + 6 * i, 2, signed=True),
+                                          val_from(frame, 482-424 + 6 * i, 2, signed=True))])
+
+                            data.append(["om_ss_angle ДСГ %d" % i, "%d" %
+                                         val_from(frame, 520-424 + 4 * i, 4)])
+
+                        data.append(["Калиброванная угловая скорость СОП", "(%d, %d, %d)" %
+                                     (val_from(frame, 472-424, 2, signed=True),
+                                      val_from(frame, 474-424, 2, signed=True),
+                                      val_from(frame, 476-424, 2, signed=True))])
+
+                        data.append(["Калиброванные магнитометры СОП", "(%d, %d, %d)" %
+                                     (val_from(frame, 514-424, 2, signed=True),
+                                      val_from(frame, 516-424, 2, signed=True),
+                                      val_from(frame, 518-424, 2, signed=True))])
+
+                        data.append(["время ТМИ6 (мс)", "%d" %
+                                     val_from(frame, 544-424, 4)])
+                        # data.append(["ТМИ6 резерв", "%d" %
+                        #              val_from(frame, 548-424, 1)])
+                        data.append(["Версия прошивки", "%d" %
+                                     val_from(frame, 549-424, 1)])
+                    elif id_loc_data["data_code"] == TMI9_pack_t or \
+                            id_loc_data["data_code"] == LOG_TMI9_rec:
+                        data.append(["Тип данных", "ТМИ 9"])
+                        # data.append(["ТМИ9 резерв", "%d" %
+                        #              val_from(frame, , 7)])
+
+                        data.append(["время ТМИ9 (мс)", "%d" %
+                                     val_from(frame, 571-552, 4)])
+
+                        # todo: поправить описание, добавить hs_alg_data_t  hs[6];
+                        data.append(["nadir", "%d, %d, %d" %
+                                     (val_from(frame, 575-552, 2),
+                                      val_from(frame, 577-552, 2),
+                                      val_from(frame, 579-552, 2))])
+
+                        data.append(["sun", "%d, %d, %d" %
+                                     (val_from(frame, 571-552, 2),
+                                      val_from(frame, 583-552, 2),
+                                      val_from(frame, 585-552, 2))])
+
+                        data.append(["mag", "%d, %d, %d" %
+                                     (val_from(frame, 587-552, 2),
+                                      val_from(frame, 589-552, 2),
+                                      val_from(frame, 591-552, 2))])
+
+                        data.append(["Версия прошивки", "%d" %
+                                     val_from(frame, 677-552, 1)])
+                    else:
+                        data.append(["Неизвестный тип данных", "0"])
+
+                    pack_crc = val_from(frame, 126, 2)
+                    calc_crc = crc16_ccitt(frame, 126)
+                    data.append(["frame CRC-16", "0x%04X" % pack_crc])
+                    data.append(["calc CRC-16", "0x%04X" % calc_crc])
+                    data.append(["Статус CRC", pack_crc == calc_crc])
+
                 else:
                     #
                     data.append(["Метка кадра", "0x%04X" % val_from(frame, 0, 2)])
@@ -320,4 +703,13 @@ def crc16_calc(buf, length):
         crc = (crc << 8) ^ crc16tab[index]
         crc &= 0xFFFF
         d = -d
+    return crc
+
+
+def crc16_ccitt(buf, length):
+    crc = 0xFFFF
+    for i in range(length):
+        index = ((crc >> 8) ^ buf[i]) & 0x00FF
+        crc = (crc << 8) ^ crc16tab[index]
+        crc &= 0xFFFF
     return crc
