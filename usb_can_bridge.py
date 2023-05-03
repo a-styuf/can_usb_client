@@ -156,7 +156,7 @@ class MyUSBCANDevice(serial.Serial):
         """
         process id_var_value
         :param id_var: id_var according to title
-        :return: егзду of id_var fields
+        :return: tuple of id_var fields
         """
         dev_id = (id_var >> 28) & 0x0F
         var_id = (id_var >> 24) & 0x0F
