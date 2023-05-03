@@ -251,7 +251,7 @@ def get_id_loc_data(id_loc):
     return {"dev_id": device_id, "flags": flags, "data_code": data_id}
 
 
-def val_from(frame, offset, leng, byteorder="little", signed=False, debug=False):
+def val_from(frame, offset, leng, byteorder="little", signed=False, debug=False, to_double=False):
     """
     обертка для функции сбора переменной из оффсета и длины, пишется короче и по умолчанию значения самый используемые
     :param frame: лист с данными кадра
@@ -259,11 +259,21 @@ def val_from(frame, offset, leng, byteorder="little", signed=False, debug=False)
     :param leng: длина переменной в байтах
     :param byteorder: порядок следования байт в срезе ('little', 'big')
     :param signed: знаковая или не знаковая переменная (True, False)
+    :param to_double: имеет ли переменная тип double (True, False)
     :return: интовое значение переменной
     """
-    retval = int.from_bytes(frame[offset + 0:offset + leng], byteorder=byteorder, signed=signed)
+    if to_double:
+        byte_arr = bytes(frame[offset + 0:offset + leng])
+        retval = struct.unpack('d', byte_arr)[0]
+    else:
+        retval = int.from_bytes(frame[offset + 0:offset + leng], byteorder=byteorder, signed=signed)
+
     if debug:
-        print(frame[offset + 0:offset + leng], " %04X" % int.from_bytes(frame[offset + 0:offset + leng], byteorder=byteorder, signed=signed))
+        if to_double:
+            print(frame[offset + 0:offset + leng], retval)
+        else:
+            print(frame[offset + 0:offset + leng], " %04X" %
+              int.from_bytes(frame[offset + 0:offset + leng], byteorder=byteorder, signed=signed))
     return retval
 
 
