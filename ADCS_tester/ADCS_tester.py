@@ -21,7 +21,7 @@ class ADCSClientGUI(QtWidgets.QFrame, ADCS_tester_widget.Ui_Form):
         self.setupUi(self)
 
         self.can_num = self.CANChanNUMSBox.value()
-        self.dev_id = unit_dev_id
+        self.dev_id = std_dev_id
         self.can_lock = threading.Lock()
 
         self.interface = None
@@ -55,7 +55,7 @@ class ADCSClientGUI(QtWidgets.QFrame, ADCS_tester_widget.Ui_Form):
         self.canUnitWidget.CANChanNUMSBox.setValue(self.can_num)
 
         self.FWTimer = QtCore.QTimer()
-        self.FWRdr = FWReader(self, ifs=self.interface, tmi=2, dev_id=unit_dev_id)
+        self.FWRdr = FWReader(self, ifs=self.interface, tmi=2, dev_id=self.dev_id)
 
         self.updateTimer = QtCore.QTimer()
         self.updateTimer.timeout.connect(self.update_data)
@@ -100,6 +100,15 @@ class ADCSClientGUI(QtWidgets.QFrame, ADCS_tester_widget.Ui_Form):
         pass
 
     def connect(self):
+        self.dev_id = self.IDDEVSBox.value()
+        self.FWRdr.set_id_dev(self.dev_id)
+        self.dataWidget.set_id_dev(self.dev_id)
+        self.testWidget.set_id_dev(self.dev_id)
+        self.TMIWidget.set_id_dev(self.dev_id)
+
+        self.canUnitWidget.dev_id = self.dev_id
+        self.canUnitWidget.devIDSBox.setValue(self.dev_id)
+
         self.serial_number = self.devIDLEdit.text()
         self.interface.serial_numbers = [self.serial_number]
         self.interface.reconnect()

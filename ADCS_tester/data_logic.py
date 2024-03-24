@@ -45,6 +45,9 @@ class DataWidget(QtWidgets.QFrame, data_unit_widget.Ui_dataUnitFrame):
 
         pass
 
+    def set_id_dev(self, dev_id):
+        self.dev_id = dev_id
+
     def set_can_num(self, can_num):
         self.can_num = can_num
 
@@ -103,7 +106,7 @@ class DataWidget(QtWidgets.QFrame, data_unit_widget.Ui_dataUnitFrame):
                                     pass
                                 self.read_repeat -= 1
                                 id_var, data = self.interface.get_last_data()
-                                if check_id_var(id_var, addr):
+                                if check_id_var(id_var, addr, self.dev_id):
                                     with self.data_lock:
                                         self.data[name] = data
                                     self.read_repeat = repeat_count

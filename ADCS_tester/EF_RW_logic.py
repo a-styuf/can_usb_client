@@ -66,6 +66,9 @@ class TMIWidget(QtWidgets.QFrame, EF_RW_widget.Ui_EF_RW_Frame):
 
         self.read_repeat = repeat_count
 
+    def set_id_dev(self, dev_id):
+        self.dev_id = dev_id
+
     def on_launch_pb_clicked(self):
         parameters = {"can_num": self.can_num, "dev_id": self.dev_id, "mode": "write", "var_id": 4, "offset": 78,
                       "d_len": 6, "data": [tmi_nums[int(self.TMINumCB.currentIndex())], 0,
@@ -138,7 +141,7 @@ class TMIWidget(QtWidgets.QFrame, EF_RW_widget.Ui_EF_RW_Frame):
 
             self.read_repeat -= 1
             id_var, data = self.interface.get_last_data()
-            if check_id_var(id_var, addr):
+            if check_id_var(id_var, addr, self.dev_id):
                 self.read_repeat = repeat_count
                 self.data = data
                 break

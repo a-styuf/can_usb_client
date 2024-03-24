@@ -50,6 +50,9 @@ class SimpleCommunication(QtCore.QObject):
             self.time_out = repeat_count
         pass
 
+    def set_id_dev(self, dev_id):
+        self.dev_id = dev_id
+
     def read_answer(self):
         self.time_out -= 1
         if self.time_out > 0:

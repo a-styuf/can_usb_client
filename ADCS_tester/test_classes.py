@@ -80,7 +80,7 @@ class FWTester(TesterBase):
                     pass
                 self.read_repeat -= 1
                 id_var, data = interface.get_last_data()
-                if check_id_var(id_var, addr):
+                if check_id_var(id_var, addr, self.dev_id):
                     self.last_data.append(data[0])
                     self.read_repeat = repeat_count
                     break

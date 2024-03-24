@@ -16,7 +16,10 @@ data_lock = threading.Lock()
 # раскрашивание переменных
 # модули
 linking_module = 6
-ADCS_module = 4
+ADCS_module_main = 4
+ADCS_module_res = 5
+
+use_new_header = True
 
 # тип кадров
 lm_beacon = 0x80
@@ -54,7 +57,7 @@ def frame_parcer(frame):
                 print(error)
             if 0x0FF1 == val_from(frame, 0, 2):  # проверка на метку кадра
 
-                new_header = bool(val_from(frame, 2, 1) & 0x80)
+                new_header = bool(val_from(frame, 3, 1) & 0x80) | use_new_header
                 id_loc_raw  = val_from(frame, 4, 2) if new_header else val_from(frame, 2, 2)
                 id_loc_data = get_id_loc_data(id_loc_raw)
 
@@ -249,7 +252,8 @@ def frame_parcer(frame):
                         data.append(["Номер кадра, шт", "%d" % val_from(frame, 4, 2)])
                         #
                         data.append(["Неизвестный тип данных", "0"])
-                elif id_loc_data["dev_id"] == ADCS_module:
+                elif id_loc_data["dev_id"] == ADCS_module_main or \
+                        id_loc_data["dev_id"] == ADCS_module_res:
                     first_loc_flag = not bool(id_loc_raw & 0x0100)
                     data.append(["Метка кадра", "0x%04X" % val_from(frame, 0, 2)])
 
@@ -603,7 +607,7 @@ def frame_parcer(frame):
                         data.append(["Неизвестный тип данных", "0"])
 
                     pack_crc = val_from(frame, 126, 2)
-                    calc_crc = crc16_ccitt(frame, 126)
+                    calc_crc = crc16_calc(frame, 126)
                     data.append(["frame CRC-16", "0x%04X" % pack_crc])
                     data.append(["calc CRC-16", "0x%04X" % calc_crc])
                     data.append(["Статус CRC", pack_crc == calc_crc])
@@ -713,3 +717,6 @@ def crc16_ccitt(buf, length):
         crc = (crc << 8) ^ crc16tab[index]
         crc &= 0xFFFF
     return crc
+
+if __name__ == '__main__':
+    print(crc16_calc([0xAA, 0xBB, 0xCC, 0xDD], 4))

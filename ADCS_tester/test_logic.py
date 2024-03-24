@@ -41,6 +41,9 @@ class TestWidget(QtWidgets.QFrame, test_unit_widget.Ui_testUnitFrame):
 
         pass
 
+    def set_id_dev(self, dev_id):
+        self.dev_id = dev_id
+
     def set_can_num(self, can_num):
         self.can_num = can_num
 
