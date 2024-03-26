@@ -1,6 +1,6 @@
 import sys
-from PyQt5 import QtWidgets, QtCore, QtGui
-from PyQt5.QtGui import QColor
+from PyQt6 import QtWidgets, QtCore, QtGui
+from PyQt6.QtGui import QColor
 import usb_can_bridge
 import can_unit_widget
 import can_usb_bridge_client_widget
@@ -33,11 +33,11 @@ class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
             else:
                 pass
         # конфигурация
-        self.cfg_dict = {"name": "Name",
+        self.cfg_dict = {"name": "ADCS TMI2",
                          "channel_num": "0",
-                         "dev_id": "6",
+                         "dev_id": "4",
                          "var_id": "5",
-                         "offset": "0",
+                         "offset": "40",
                          "length": "128",
                          "data": " ".join(["0" for i in range(128)]),
                          "mode": "read",
@@ -587,4 +587,4 @@ if __name__ == '__main__':  # Если мы запускаем файл напр
     app = QtWidgets.QApplication(sys.argv)  # Новый экземпляр QApplication
     window = MainWindow()  # Создаём объект класса ExampleApp
     window.show()
-    app.exec_()  # и запускаем приложение
+    app.exec()  # и запускаем приложение
