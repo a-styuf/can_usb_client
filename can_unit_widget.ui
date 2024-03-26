@@ -90,6 +90,9 @@
            <height>30</height>
           </size>
          </property>
+         <property name="text">
+          <string>ADCS TMI2</string>
+         </property>
         </widget>
        </item>
       </layout>
@@ -200,7 +203,7 @@
           <number>32</number>
          </property>
          <property name="value">
-          <number>6</number>
+          <number>4</number>
          </property>
         </widget>
        </item>
@@ -293,6 +296,9 @@
          </property>
          <property name="maximum">
           <number>100000000</number>
+         </property>
+         <property name="value">
+          <number>40</number>
          </property>
         </widget>
        </item>
@@ -503,7 +509,6 @@
       <font>
        <family>Courier New</family>
        <pointsize>8</pointsize>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -528,10 +533,10 @@
      <attribute name="horizontalHeaderCascadingSectionResizes">
       <bool>false</bool>
      </attribute>
-     <attribute name="horizontalHeaderDefaultSectionSize">
+     <attribute name="horizontalHeaderMinimumSectionSize">
       <number>30</number>
      </attribute>
-     <attribute name="horizontalHeaderMinimumSectionSize">
+     <attribute name="horizontalHeaderDefaultSectionSize">
       <number>30</number>
      </attribute>
      <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
@@ -540,10 +545,10 @@
      <attribute name="horizontalHeaderStretchLastSection">
       <bool>false</bool>
      </attribute>
-     <attribute name="verticalHeaderDefaultSectionSize">
+     <attribute name="verticalHeaderMinimumSectionSize">
       <number>30</number>
      </attribute>
-     <attribute name="verticalHeaderMinimumSectionSize">
+     <attribute name="verticalHeaderDefaultSectionSize">
       <number>30</number>
      </attribute>
      <attribute name="verticalHeaderStretchLastSection">
