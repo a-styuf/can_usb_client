@@ -384,13 +384,15 @@ class Ui_Frame(object):
 
         self.retranslateUi(Frame)
         QtCore.QMetaObject.connectSlotsByName(Frame)
-        Frame.setTabOrder(self.nameLine, self.devIDSBox)
+        Frame.setTabOrder(self.nameLine, self.CANChanNUMSBox)
+        Frame.setTabOrder(self.CANChanNUMSBox, self.devIDSBox)
         Frame.setTabOrder(self.devIDSBox, self.varIDSBox)
-        Frame.setTabOrder(self.varIDSBox, self.lengthSBox)
-        Frame.setTabOrder(self.lengthSBox, self.idVarLine)
-        Frame.setTabOrder(self.idVarLine, self.modeBox)
+        Frame.setTabOrder(self.varIDSBox, self.offsetSBox)
+        Frame.setTabOrder(self.offsetSBox, self.lengthSBox)
+        Frame.setTabOrder(self.lengthSBox, self.modeBox)
         Frame.setTabOrder(self.modeBox, self.actionPButton)
         Frame.setTabOrder(self.actionPButton, self.dataTable)
+        Frame.setTabOrder(self.dataTable, self.idVarLine)
 
     def retranslateUi(self, Frame):
         _translate = QtCore.QCoreApplication.translate

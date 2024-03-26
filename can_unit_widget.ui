@@ -805,13 +805,15 @@
  </widget>
  <tabstops>
   <tabstop>nameLine</tabstop>
+  <tabstop>CANChanNUMSBox</tabstop>
   <tabstop>devIDSBox</tabstop>
   <tabstop>varIDSBox</tabstop>
+  <tabstop>offsetSBox</tabstop>
   <tabstop>lengthSBox</tabstop>
-  <tabstop>idVarLine</tabstop>
   <tabstop>modeBox</tabstop>
   <tabstop>actionPButton</tabstop>
   <tabstop>dataTable</tabstop>
+  <tabstop>idVarLine</tabstop>
  </tabstops>
  <resources/>
  <connections/>
