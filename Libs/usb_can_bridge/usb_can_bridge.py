@@ -19,7 +19,7 @@ import serial
 import serial.tools.list_ports
 import threading
 import time
-import crc16
+import Libs.crc16.crc16 as crc16
 import copy
 
 

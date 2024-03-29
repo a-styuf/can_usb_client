@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'd:\work\Soft\can_usb_software\can_usb_bridge_client_widget.ui'
+# Form implementation generated from reading ui file 'd:\work\Soft\can_usb_software\UI\can_usb_bridge_client_widget.ui'
 #
 # Created by: PyQt6 UI code generator 6.6.1
 #

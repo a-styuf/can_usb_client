@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'd:\work\Soft\can_usb_software\can_unit_widget.ui'
+# Form implementation generated from reading ui file 'd:\work\Soft\can_usb_software\Libs\can_unit\can_unit_widget.ui'
 #
 # Created by: PyQt6 UI code generator 6.6.1
 #
