@@ -139,3 +139,4 @@ dmypy.json
 .idea/can_usb_client.iml
 .idea/misc.xml
 .idea/modules.xml
+CAN-USB_init.cfg
