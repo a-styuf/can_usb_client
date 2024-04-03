@@ -1,5 +1,6 @@
 from PyQt6 import QtWidgets, QtCore
 import Libs.can_unit.can_unit_widget as can_unit_widget
+import Libs.NorbyFrameParser.norby_data as norby_data
 
 
 
