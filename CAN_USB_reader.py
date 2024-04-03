@@ -1,5 +1,6 @@
 import sys
 from PyQt6 import QtWidgets, QtCore
+from PyQt6.QtGui import QKeySequence, QShortcut
 import configparser
 import os
 import time
@@ -133,6 +134,9 @@ class ClientGUIWindow(QtWidgets.QFrame, can_usb_bridge_client_widget.Ui_Form):
         self.updateTimer.timeout.connect(self.update_data)
         self.updateTimer.start(1000)
 
+        self.shortcut_Ctrl_K = QShortcut(QKeySequence('Ctrl+K'), self)
+        self.shortcut_Ctrl_K.activated.connect(self.connect)
+        
     def update_data(self):
         # log_files
         for log_str in self.interface.get_can_log():

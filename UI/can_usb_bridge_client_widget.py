@@ -178,6 +178,7 @@ class Ui_Form(object):
         self.dataTWidget.setMinimumSize(QtCore.QSize(250, 0))
         self.dataTWidget.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.dataTWidget.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self.dataTWidget.setTabKeyNavigation(False)
         self.dataTWidget.setWordWrap(False)
         self.dataTWidget.setRowCount(20)
         self.dataTWidget.setObjectName("dataTWidget")
@@ -195,7 +196,7 @@ class Ui_Form(object):
         item.setFont(font)
         self.dataTWidget.setHorizontalHeaderItem(1, item)
         self.dataTWidget.horizontalHeader().setCascadingSectionResizes(False)
-        self.dataTWidget.horizontalHeader().setDefaultSectionSize(0)
+        self.dataTWidget.horizontalHeader().setDefaultSectionSize(150)
         self.dataTWidget.horizontalHeader().setMinimumSectionSize(150)
         self.dataTWidget.horizontalHeader().setStretchLastSection(True)
         self.dataTWidget.verticalHeader().setDefaultSectionSize(30)
@@ -206,6 +207,20 @@ class Ui_Form(object):
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
+        Form.setTabOrder(self.addUnitPButton, self.dltUnitNumSBox)
+        Form.setTabOrder(self.dltUnitNumSBox, self.dltUnitPButt)
+        Form.setTabOrder(self.dltUnitPButt, self.dltAllUnitsPButt)
+        Form.setTabOrder(self.dltAllUnitsPButt, self.loadCfgPButt)
+        Form.setTabOrder(self.loadCfgPButt, self.saveCfgPButt)
+        Form.setTabOrder(self.saveCfgPButt, self.cycleStartPButton)
+        Form.setTabOrder(self.cycleStartPButton, self.cycleIntervalSBox_3)
+        Form.setTabOrder(self.cycleIntervalSBox_3, self.cycleNumSBox_3)
+        Form.setTabOrder(self.cycleNumSBox_3, self.cycleElapsedTimeEdit)
+        Form.setTabOrder(self.cycleElapsedTimeEdit, self.cycleStopPButton)
+        Form.setTabOrder(self.cycleStopPButton, self.connectionPButton)
+        Form.setTabOrder(self.connectionPButton, self.devIDLEdit)
+        Form.setTabOrder(self.devIDLEdit, self.dataTWidget)
+        Form.setTabOrder(self.dataTWidget, self.scrollArea)
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate

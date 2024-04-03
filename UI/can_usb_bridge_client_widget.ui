@@ -441,6 +441,9 @@
      <property name="sizeAdjustPolicy">
       <enum>QAbstractScrollArea::AdjustToContents</enum>
      </property>
+     <property name="tabKeyNavigation">
+      <bool>false</bool>
+     </property>
      <property name="wordWrap">
       <bool>false</bool>
      </property>
@@ -450,10 +453,10 @@
      <attribute name="horizontalHeaderCascadingSectionResizes">
       <bool>false</bool>
      </attribute>
-     <attribute name="horizontalHeaderDefaultSectionSize">
-      <number>0</number>
-     </attribute>
      <attribute name="horizontalHeaderMinimumSectionSize">
+      <number>150</number>
+     </attribute>
+     <attribute name="horizontalHeaderDefaultSectionSize">
       <number>150</number>
      </attribute>
      <attribute name="horizontalHeaderStretchLastSection">
@@ -512,6 +515,23 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>addUnitPButton</tabstop>
+  <tabstop>dltUnitNumSBox</tabstop>
+  <tabstop>dltUnitPButt</tabstop>
+  <tabstop>dltAllUnitsPButt</tabstop>
+  <tabstop>loadCfgPButt</tabstop>
+  <tabstop>saveCfgPButt</tabstop>
+  <tabstop>cycleStartPButton</tabstop>
+  <tabstop>cycleIntervalSBox_3</tabstop>
+  <tabstop>cycleNumSBox_3</tabstop>
+  <tabstop>cycleElapsedTimeEdit</tabstop>
+  <tabstop>cycleStopPButton</tabstop>
+  <tabstop>connectionPButton</tabstop>
+  <tabstop>devIDLEdit</tabstop>
+  <tabstop>dataTWidget</tabstop>
+  <tabstop>scrollArea</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
