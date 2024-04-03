@@ -518,6 +518,9 @@
      <property name="horizontalScrollBarPolicy">
       <enum>Qt::ScrollBarAlwaysOff</enum>
      </property>
+     <property name="tabKeyNavigation">
+      <bool>false</bool>
+     </property>
      <property name="wordWrap">
       <bool>false</bool>
      </property>
@@ -812,8 +815,8 @@
   <tabstop>lengthSBox</tabstop>
   <tabstop>modeBox</tabstop>
   <tabstop>actionPButton</tabstop>
-  <tabstop>dataTable</tabstop>
   <tabstop>idVarLine</tabstop>
+  <tabstop>dataTable</tabstop>
  </tabstops>
  <resources/>
  <connections/>

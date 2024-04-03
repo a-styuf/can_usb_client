@@ -1,4 +1,5 @@
 from PyQt6 import QtWidgets, QtCore
+from PyQt6.QtGui import QKeySequence, QShortcut
 import Libs.can_unit.can_unit_widget as can_unit_widget
 import Libs.NorbyFrameParser.norby_data as norby_data
 
@@ -58,6 +59,10 @@ class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
         #
         self.request_timer = QtCore.QTimer()
         self.request_timer.timeout.connect(self.set_data_to_unit)
+
+        self.shortcut_Ctrl_Space = QShortcut(QKeySequence('Ctrl+Space'), self)
+        self.shortcut_Ctrl_Space.activated.connect(self.action)
+        self.shortcut_Ctrl_Space.setContext(QtCore.Qt.ShortcutContext.WidgetWithChildrenShortcut)
 
     def set_num(self, n):
         self.num = n

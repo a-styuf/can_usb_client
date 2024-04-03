@@ -245,6 +245,7 @@ class Ui_Frame(object):
         self.dataTable.setFont(font)
         self.dataTable.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.dataTable.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.dataTable.setTabKeyNavigation(False)
         self.dataTable.setWordWrap(False)
         self.dataTable.setRowCount(8)
         self.dataTable.setColumnCount(16)
@@ -391,8 +392,8 @@ class Ui_Frame(object):
         Frame.setTabOrder(self.offsetSBox, self.lengthSBox)
         Frame.setTabOrder(self.lengthSBox, self.modeBox)
         Frame.setTabOrder(self.modeBox, self.actionPButton)
-        Frame.setTabOrder(self.actionPButton, self.dataTable)
-        Frame.setTabOrder(self.dataTable, self.idVarLine)
+        Frame.setTabOrder(self.actionPButton, self.idVarLine)
+        Frame.setTabOrder(self.idVarLine, self.dataTable)
 
     def retranslateUi(self, Frame):
         _translate = QtCore.QCoreApplication.translate
