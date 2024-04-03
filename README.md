@@ -9,15 +9,16 @@
 Bash:
 ```bash
 git clone https://github.com/CuSynth/can_usb_software.git
-python -m venv .venv && source .venv/Scripts/activate && pip install -r requirements.txt
+cd ./can_usb_software/ && python -m venv .venv && source .venv/Scripts/activate && python -m pip install -r requirements.txt
 ```
 
 PowerShell (в том числе, терминал VsCode):
 ```powershell
 git clone https://github.com/CuSynth/can_usb_software.git
+cd ./can_usb_software/
 python -m venv .venv
 .venv/Scripts/activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 
