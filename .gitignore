@@ -132,9 +132,11 @@ dmypy.json
 
 # my ignote
 /Logs/
+/ADCS_tester/Logs/
 /can_usb_app/
 /build/
 .idea/.gitignore
 .idea/can_usb_client.iml
 .idea/misc.xml
 .idea/modules.xml
+CAN-USB_init.cfg
