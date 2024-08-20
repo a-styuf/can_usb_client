@@ -1,8 +1,10 @@
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtGui import QKeySequence, QShortcut
 import Libs.can_unit.can_unit_widget as can_unit_widget
-import Libs.NorbyFrameParser.norby_data as norby_data
-
+from loguru import logger
+# import Libs.NorbyFrameParser.norby_data as norby_data
+from griffin_frames.frames import sat_id_dict, undefined_frame
+from bytes_parser import Frame
 
 
 class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
@@ -139,7 +141,7 @@ class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
             self.action_signal.emit([])
             self.state_check()
         except Exception as error:
-            print("can_unit: write :", error)
+            logger.error(error)
         pass
 
     def read(self):
@@ -179,6 +181,19 @@ class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
         if dev_id == self.dev_id and var_id == self.var_id and offset == self.offset:
             return True
         return False
+    
+    @staticmethod
+    def frame_parcing(raw_data):
+        
+        if raw_data[:2] == b'\xf1\x0f':
+            griffin_frame_type_dict: dict = sat_id_dict.get(int.from_bytes(raw_data[2:4], byteorder="little"), {})
+            frame: Frame = griffin_frame_type_dict.get(raw_data[4], undefined_frame)
+            result: DataFrame = frame.parse(raw_data)
+            result_list = [[row[1][0], row[1][1]] for row in result.iterrows()]
+            return result_list
+        else:
+            logger.error('Incorrect data')
+            return None
 
     def set_data_to_unit(self):
         self.total_cnt += 1
@@ -192,7 +207,7 @@ class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
                     self.insert_data(data)
                 self.state = 0
                 self.get_data()
-                self.table_data = norby_data.frame_parcer(self.data)
+                self.table_data = self.frame_parcing(bytearray(self.data))
                 # при приеме инициируем сигнал, который запустит отображение таблицы данных
                 try:
                     self.action_signal.emit(self.table_data)
@@ -212,7 +227,7 @@ class Widget(QtWidgets.QFrame, can_unit_widget.Ui_Frame):
     def action(self):
         if self.modeBox.currentText() in "Чтение":  # read
             self.read()
-            self.table_data = norby_data.frame_parcer(self.data)
+            # self.table_data = norby_data.frame_parcer(self.data)
         else:
             self.write()
         pass
